@@ -168,6 +168,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('users/details/{user}', [ManageUserController::class, 'userDetails'])->name('user.details');
             Route::post('users/update/{user}', [ManageUserController::class, 'userUpdate'])->name('user.update');
             Route::post('users/balance/{user}', [ManageUserController::class, 'userBalanceUpdate'])->name('user.balance.update');
+            Route::post('users/invest/balance/{user}', [ManageUserController::class, 'userInvestUpdate'])->name('user.invest.update');
             Route::post('users/mail/{user}', [ManageUserController::class, 'sendUserMail'])->name('user.mail');
             Route::get('users/search', [ManageUserController::class, 'index'])->name('user.search');
             Route::get('users/disabled', [ManageUserController::class, 'disabled'])->name('user.disabled');

@@ -167,6 +167,34 @@
                                     <button class="btn btn-outline-danger px-2" type="submit" id="button-addon2"> <i class="fa fa-minus mr-1"></i> {{ __('Subtruct Balance') }}</button>
                                 </div>
                             </form>
+
+                            <form action="{{ route('admin.user.invest.update', $user->id) }}" method="post">
+                                @csrf
+                                <div class="input-group mb-3">
+                                    <input type="hidden" class="form-control" name="user_id" value="{{ $user->id }}">
+                                    <input type="hidden" class="form-control" name="type" value="add">
+                                    <select name="plan_id" class="form-control" required>
+                                        <option value="">{{ __('Select Plan') }}</option>
+                                        @foreach($plans as $pl)
+                                            <option value="{{ $pl->id }}">{{ $pl->plan_name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <input type="number" class="form-control" name="amount" min="1" step="any"
+                                        placeholder="Add Invest Balance" required>
+                                    <button class="btn btn-outline-success px-2" type="submit" id="button-addon3"> <i class="fa fa-plus mr-1"></i> {{ __('Add Invest') }}</button>
+                                </div>
+                            </form>
+
+                            <form action="{{ route('admin.user.invest.update', $user->id) }}" method="post">
+                                @csrf
+                                <div class="input-group mb-3">
+                                    <input type="hidden" class="form-control" name="user_id" value="{{ $user->id }}">
+                                    <input type="hidden" class="form-control" name="type" value="minus">
+                                    <input type="number" class="form-control" name="amount" min="1" step="any"
+                                        placeholder="Subtract Invest Balance" required>
+                                    <button class="btn btn-outline-danger px-2" type="submit" id="button-addon4"> <i class="fa fa-minus mr-1"></i> {{ __('Sub Invest') }}</button>
+                                </div>
+                            </form>
                         </div>
                         <div class="custom-xxl-9 col-xl-8 col-lg-7">
                             <ul class="user-action-list">

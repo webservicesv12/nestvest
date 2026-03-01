@@ -10,8 +10,11 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Models\UserInterest;
 use App\Models\Withdraw;
+use App\Models\Plan;
 use Illuminate\Http\Request;
 use Auth;
+use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 
 class ManageUserController extends Controller
@@ -59,8 +62,9 @@ class ManageUserController extends Controller
 
 
         $pageTitle = "User Details";
+        $plans = Plan::where('status', 1)->get();
 
-        return view('backend.users.details', compact('pageTitle', 'user', 'plan', 'totalRef', 'userInterest', 'userCommission', 'withdrawTotal', 'totalDeposit', 'totalInvest', 'totalTicket'));
+        return view('backend.users.details', compact('pageTitle', 'user', 'plan', 'totalRef', 'userInterest', 'userCommission', 'withdrawTotal', 'totalDeposit', 'totalInvest', 'totalTicket', 'plans'));
     }
 
     public function userUpdate(Request $request, User $user)
@@ -196,6 +200,87 @@ class ManageUserController extends Controller
         $user->save();
 
         $notify[] = ['success', 'Successfully ' . $request->type . ' balance'];
+
+        return back()->withNotify($notify);
+    }
+
+    public function userInvestUpdate(Request $request)
+    {
+        $user = User::findOrFail($request->user_id);
+        $general = GeneralSetting::first();
+
+        if ($request->type == 'add') {
+            $plan = Plan::findOrFail($request->plan_id);
+            $trx = strtoupper(Str::random());
+            $next_payment_date = Carbon::now()->addHours($plan->time->time);
+
+            Payment::create([
+                'plan_id' => $plan->id,
+                'gateway_id' => 0,
+                'user_id' => $user->id,
+                'transaction_id' => $trx,
+                'amount' => $request->amount,
+                'rate' => 0,
+                'charge' => 0,
+                'final_amount' => $request->amount,
+                'payment_status' => 1,
+                'next_payment_date' => $next_payment_date,
+            ]);
+
+            Transaction::create([
+                'trx' => $trx,
+                'gateway_id' => 0,
+                'amount' => $request->amount,
+                'currency' => @$general->site_currency,
+                'details' => 'Invest Balance Added By Admin',
+                'charge' => 0,
+                'type' => '+',
+                'gateway_transaction' => $trx,
+                'user_id' => $user->id,
+                'payment_status' => 1,
+            ]);
+
+            $notify[] = ['success', 'Successfully added invest balance'];
+        } else {
+            $amountToSubtract = $request->amount;
+            $payments = Payment::where('user_id', $user->id)->where('payment_status', 1)->get();
+            $totalInvest = $payments->sum('amount');
+
+            if ($totalInvest < $amountToSubtract) {
+                $notify[] = ['error', 'Insufficient invest balance'];
+                return back()->withNotify($notify);
+            }
+
+            foreach ($payments as $payment) {
+                if ($amountToSubtract <= 0) break;
+
+                if ($payment->amount <= $amountToSubtract) {
+                    $amountToSubtract -= $payment->amount;
+                    $payment->delete();
+                } else {
+                    $payment->amount -= $amountToSubtract;
+                    $payment->final_amount -= $amountToSubtract;
+                    $payment->save();
+                    $amountToSubtract = 0;
+                }
+            }
+
+            $trx = strtoupper(Str::random());
+            Transaction::create([
+                'trx' => $trx,
+                'gateway_id' => 0,
+                'amount' => $request->amount,
+                'currency' => @$general->site_currency,
+                'details' => 'Invest Balance Subtracted By Admin',
+                'charge' => 0,
+                'type' => '-',
+                'gateway_transaction' => $trx,
+                'user_id' => $user->id,
+                'payment_status' => 1,
+            ]);
+
+            $notify[] = ['success', 'Successfully subtracted invest balance'];
+        }
 
         return back()->withNotify($notify);
     }
